@@ -9,6 +9,9 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Doggyflix">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" id="favicon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -114,10 +117,10 @@ img { max-width: 100%; }
 .btn.line { border: 1px solid var(--line); background: var(--surface-2); }
 .btn:focus-visible { transform: scale(1.06); outline: 3px solid var(--fg); }
 @media (max-width: 760px) {
-  .hero { min-height: 0; padding-top: 9.5rem; padding-bottom: 2.5rem; }
+  .hero { min-height: 0; padding-top: calc(12rem + env(safe-area-inset-top, 0px)); padding-bottom: 2.5rem; }
   .hero h1 { font-size: 3.1rem; }
-  .hero-logo { right: 50%; top: 5.8rem; transform: translateX(50%); width: 9rem; max-height: 5rem; }
-  .hero-initials { right: 50%; top: 4rem; transform: translateX(50%); font-size: 6rem; }
+  .hero-logo { right: 50%; top: calc(6.8rem + env(safe-area-inset-top, 0px)); transform: translateX(50%); width: 9rem; max-height: 4.4rem; }
+  .hero-initials { right: 50%; top: calc(5.8rem + env(safe-area-inset-top, 0px)); transform: translateX(50%); font-size: 5.5rem; }
   .hero-bg::after { background: linear-gradient(0deg, var(--bg) 0%, rgba(20,20,20,.75) 55%, rgba(20,20,20,.2) 100%); }
   .btn { padding: .55rem 1.1rem; font-size: .95rem; }
 }
@@ -280,6 +283,17 @@ textarea.field { width: 100%; min-height: 6rem; resize: vertical; font-family: u
 .note { margin: 1.6rem 0 0; font-size: .85rem; color: var(--muted); border-left: 3px solid var(--line); padding-left: .8rem; }
 .hint-s { margin: .3rem 0 0; font-size: .8rem; color: var(--muted); }
 .toast { position: fixed; left: 50%; transform: translateX(-50%); z-index: 70; bottom: calc(1.4rem + env(safe-area-inset-bottom, 0px)); background: #fff; color: #000; border-radius: .3rem; padding: .6rem 1.2rem; font-weight: 700; max-width: calc(100% - 32px); text-align: center; box-shadow: 0 8px 30px rgba(0,0,0,.5); }
+.install { position: fixed; left: 0; right: 0; bottom: 0; z-index: 65; display: flex; align-items: center;
+  background: #1f1f1f; border-top: 1px solid var(--line); box-shadow: 0 -10px 30px rgba(0,0,0,.5);
+  padding-top: .8rem; padding-bottom: calc(.8rem + env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+body.watching .install { display: none !important; }
+.install .bully { width: 2.8rem; height: 2.8rem; flex: none; margin-right: .7rem; }
+.install .it { flex: 1 1 auto; min-width: 0; margin-right: .6rem; }
+.install .it strong { display: block; }
+.install .it span { color: var(--muted); font-size: .85rem; }
+.install .it b { color: var(--fg); }
+.install .btn { padding: .45rem .9rem; font-size: .9rem; margin-left: .4rem; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
 </style>
 </head>
@@ -404,6 +418,13 @@ textarea.field { width: 100%; min-height: 6rem; resize: vertical; font-family: u
   </div>
 </div>
 
+<div class="install" id="install" hidden>
+  <span class="bully"></span>
+  <div class="it"><strong>Installe Doggyflix</strong><span id="installText"></span></div>
+  <button class="btn red" id="installGo" type="button" hidden>Installer</button>
+  <button class="btn soft" id="installClose" type="button">OK</button>
+</div>
+
 <div class="toast" id="toast" hidden></div>
 
 <script>
@@ -445,22 +466,6 @@ textarea.field { width: 100%; min-height: 6rem; resize: vertical; font-family: u
     "</svg>";
   function paintLogos(root) { Array.prototype.forEach.call((root || document).querySelectorAll(".bully:empty"), function (el) { el.innerHTML = BULLY_SVG; }); }
   try { paintLogos(); } catch (e) {}
-  (function appIcon() {
-    try {
-      var img = new Image();
-      img.onload = function () {
-        var cv = document.createElement("canvas"); cv.width = cv.height = 192;
-        var x = cv.getContext("2d"); x.fillStyle = "#141414"; x.fillRect(0, 0, 192, 192); x.drawImage(img, 14, 14, 164, 164);
-        var png = cv.toDataURL("image/png");
-        var l = document.createElement("link"); l.rel = "apple-touch-icon"; l.href = png; document.head.appendChild(l);
-        var man = { name: "Doggyflix", short_name: "Doggyflix", start_url: location.href.split("#")[0], display: "standalone", background_color: "#141414", theme_color: "#141414", icons: [{ src: png, sizes: "192x192", type: "image/png" }] };
-        var ml = document.createElement("link"); ml.rel = "manifest";
-        ml.href = URL.createObjectURL(new Blob([JSON.stringify(man)], { type: "application/manifest+json" }));
-        document.head.appendChild(ml);
-      };
-      img.src = "data:image/svg+xml," + encodeURIComponent(BULLY_SVG);
-    } catch (e) {}
-  })();
   try {
     var fav = document.getElementById("favicon");
     if (!fav) { fav = document.createElement("link"); fav.rel = "icon"; fav.id = "favicon"; document.head.appendChild(fav); }
@@ -1518,6 +1523,22 @@ textarea.field { width: 100%; min-height: 6rem; resize: vertical; font-family: u
     }
     if (dir) { e.preventDefault(); moveFocus(dir); }
   });
+
+  /* ---------- Installer l'appli (écran d'accueil) ---------- */
+  (function installHelp() {
+    var standalone = navigator.standalone === true || (window.matchMedia && matchMedia("(display-mode: standalone)").matches);
+    if (standalone || store.get("installSeen", false)) return;
+    var box = $("install"), isIOS = /iPhone|iPad|iPod/.test(UA) || (/Macintosh/.test(UA) && "ontouchend" in document), deferred = null;
+    function show(text, canInstall) { $("installText").innerHTML = text; $("installGo").hidden = !canInstall; paintLogos(box); box.hidden = false; }
+    function hide() { box.hidden = true; store.set("installSeen", true); }
+    $("installClose").onclick = hide;
+    $("installGo").onclick = function () { if (deferred) { deferred.prompt(); deferred = null; } hide(); };
+    if (isIOS) setTimeout(function () { if (player.hidden && modal.hidden) show("Dans Safari, touche <b>Partager</b> (le carré avec une flèche), puis <b>« Sur l'écran d'accueil »</b>.", false); }, 3500);
+    window.addEventListener("beforeinstallprompt", function (e) {
+      e.preventDefault(); deferred = e;
+      show("Ajoute l'appli à ton écran d'accueil en un geste.", true);
+    });
+  })();
 
   /* ---------- Horloge ---------- */
   function tick() { $("clock").textContent = new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }); }
